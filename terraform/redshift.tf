@@ -138,3 +138,27 @@ resource "aws_redshiftdata_statement" "copy" {
     ignore_changes = all
   }
 }
+
+locals {
+  comment_statements = [
+    for s in split(";", file("${path.module}/../sql/comments.sql")) : trimspace(s)
+    if trimspace(s) != ""
+  ]
+}
+
+resource "aws_redshiftdata_statement" "comment" {
+  for_each = toset(local.comment_statements)
+
+  workgroup_name = aws_redshiftserverless_workgroup.this.workgroup_name
+  database       = aws_redshiftserverless_namespace.this.db_name
+  secret_arn     = aws_redshiftserverless_namespace.this.admin_password_secret_arn
+  sql            = each.value
+
+  depends_on = [
+    aws_redshiftdata_statement.copy
+  ]
+
+  lifecycle {
+    ignore_changes = all
+  }
+}
