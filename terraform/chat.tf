@@ -96,9 +96,23 @@ resource "helm_release" "librechat" {
               KB 는 하나로 고정: QueryKnowledgeBases(knowledge_base_id="${aws_bedrockagent_knowledge_base.docs.id}", number_of_results=5).
               ListKnowledgeBases, AgenticQueryKnowledgeBases 는 부르지 않는다.
               이 KB 에는 사내 문서(승인원, ECN 통보서, 회의록, 승인원·공장 관리대장, 품질·영업·구매 절차서와 지침, 사내외 메일, 공장 공지, 안전 수칙, 당직표, 도장 표준)가 있다.
+          redshift:
+            type: streamable-http
+            url: http://redshift-mcp.mcp.svc.cluster.local/mcp
+            title: 단비에어텍 업무 시스템 데이터
+            description: ERP·MES·PLM의 재고·발주·입고·생산계획·수주·로트·설계변경 등 건별 사실과 수치를 SQL로 조회하는 읽기 전용 데이터 웨어하우스
+            timeout: 120000
+            initTimeout: 60000
+            serverInstructions: |
+              대상은 하나로 고정: cluster_identifier="${aws_redshiftserverless_workgroup.this.workgroup_name}", cluster_type="serverless", database "dev".
+              list_clusters, list_databases, review_cluster 는 부르지 않는다.
+              스키마: erp_a, erp_b, mes, plm.
+              순서: list_tables(dev, <스키마>) → list_columns(dev, <스키마>, <테이블>) → execute_query.
+              SQL 은 <스키마>. 접두어, SELECT 한 문장. 결과가 많으면 집계나 LIMIT 을 쓴다.
         mcpSettings:
           allowedDomains:
           - http://kb-retrieval-mcp.mcp.svc.cluster.local
+          - http://redshift-mcp.mcp.svc.cluster.local
     serviceAccount:
       name: librechat
     ingress:
