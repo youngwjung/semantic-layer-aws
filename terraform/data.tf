@@ -27,3 +27,23 @@ data "aws_eks_cluster" "this" {
 data "aws_eks_cluster_auth" "this" {
   name = data.aws_eks_cluster.this.name
 }
+
+# VPC
+data "aws_vpc" "this" {
+  tags = {
+    "aws:cloudformation:stack-name" = "workshop"
+  }
+}
+
+# 퍼블릭 서브넷
+data "aws_subnets" "this" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.this.id]
+  }
+
+  filter {
+    name   = "map-public-ip-on-launch"
+    values = ["true"]
+  }
+}
